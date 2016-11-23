@@ -1,7 +1,5 @@
 package dynamo.ast.implicits
 
-import scala.language.implicitConversions
-
 object StringOps {
   implicit class StringNumberOps(value: String) {
     private def validNumber[A](f : (String => A)): Boolean = try { f(value); true } catch { case t: NumberFormatException => false }

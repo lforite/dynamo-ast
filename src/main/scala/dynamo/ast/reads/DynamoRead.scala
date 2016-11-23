@@ -26,7 +26,7 @@ object DynamoRead extends DefaultReads with PrimitiveRead with CollectionRead {
 
   def lift[A](a: DynamoReadResult[A]) = DynamoRead[A] { _ => a }
 
-  def sequence[A, M[X] <: TraversableOnce[X]](in: M[DynamoRead[A]])(implicit cbf: CanBuildFrom[M[DynamoRead[A]], A, M[A]]): DynamoRead[M[A]] = {
+  def sequence[A, MO[X] <: TraversableOnce[X]](in: MO[DynamoRead[A]])(implicit cbf: CanBuildFrom[MO[DynamoRead[A]], A, MO[A]]): DynamoRead[MO[A]] = {
     in.foldLeft(pure(cbf(in)))((acc, next) => for (acc2 <- acc; next2 <- next) yield acc2 += next2).map(_.result())
   }
 
