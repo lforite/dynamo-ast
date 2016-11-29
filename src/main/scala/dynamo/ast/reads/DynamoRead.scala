@@ -39,7 +39,7 @@ object DynamoRead extends DefaultReads with PrimitiveRead with CollectionRead {
   class ReadAt[A] {
     def at(path: String)(implicit reads: DynamoRead[A]): DynamoRead[A] = DynamoRead[A] {
       MRead.read(_).flatMap { m: M =>
-        m.elements.find(_._1 == path).map(_._2).fold[DynamoReadResult[A]](DynamoReadError(path, "Not found"))(me => reads.read(me))
+        m.elements.find(_._1 == path).map(_._2).fold[DynamoReadResult[A]](DynamoReadError(path, "Path not found"))(me => reads.read(me).withPath(path))
       }
     }
   }
@@ -49,7 +49,7 @@ object DynamoRead extends DefaultReads with PrimitiveRead with CollectionRead {
   class ReadAs(at: String) {
     def as[A](implicit reads: DynamoRead[A]): DynamoRead[A] = DynamoRead[A] {
       MRead.read(_).flatMap { m: M =>
-        m.elements.find(_._1 == at).map(_._2).fold[DynamoReadResult[A]](DynamoReadError(at, "Not found"))(me => reads.read(me))
+        m.elements.find(_._1 == at).map(_._2).fold[DynamoReadResult[A]](DynamoReadError(at, "Path not found"))(me => reads.read(me).withPath(at))
       }
     }
   }
@@ -57,10 +57,15 @@ object DynamoRead extends DefaultReads with PrimitiveRead with CollectionRead {
 }
 
 trait DefaultReads {
+
+  implicit object DynamoTypeRead extends DynamoRead[DynamoType] {
+    override def read(awsType: DynamoType): DynamoReadResult[DynamoType] = DynamoReadSuccess(awsType)
+  }
+
   implicit object SRead extends DynamoRead[S] {
     override def read(awsType: DynamoType): DynamoReadResult[S] = awsType match {
       case s: S => DynamoReadSuccess(s)
-      case e => DynamoReadError("", s"was expecting N got $e")
+      case e => DynamoReadError("", s"was expecting S got $e")
     }
   }
 
@@ -184,12 +189,12 @@ trait CollectionRead { self: PrimitiveRead =>
     case awsType@(SS(e)) => sequence(e.map(a => lift(ra.read(a)))).read(awsType)
     case awsType@(NS(e)) => sequence(e.map(a => lift(ra.read(a)))).read(awsType)
     case awsType@(L(e)) => sequence(e.map(a => lift(ra.read(a))).toSet).read(awsType)
-    case e => DynamoReadError("", s"was expecting L got $e")
+    case e => DynamoReadError("", s"was expecting SS, NS or L got $e")
   }
 
   implicit def mapRead[A](implicit ra: DynamoRead[A]): DynamoRead[Map[String, A]] = DynamoRead[Map[String, A]] {
     case awsType@(M(e)) => sequence(e.map(a => lift(ra.read(a._2).map(r => (a._1, r))))).read(awsType).map(_.toMap)
-    case e => DynamoReadError("", s"was expecting L got $e")
+    case e => DynamoReadError("", s"was expecting M got $e")
   }
 
 }

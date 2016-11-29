@@ -10,6 +10,11 @@ sealed trait DynamoReadResult[+A] {
     case DynamoReadSuccess(a) => f(a)
     case e: DynamoReadError => e
   }
+
+  def withPath(path: String): DynamoReadResult[A] = this match {
+    case e: DynamoReadError => e.copy(path = path)
+    case s => s
+  }
 }
 
 case class DynamoReadSuccess[A](a: A) extends DynamoReadResult[A]
