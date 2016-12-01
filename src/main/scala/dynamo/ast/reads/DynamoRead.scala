@@ -76,14 +76,14 @@ trait DefaultReads {
     }
   }
 
-  implicit object BOOLReads extends DynamoRead[BOOL] {
+  implicit object BOOLRead extends DynamoRead[BOOL] {
     override def read(awsType: DynamoType): DynamoReadResult[BOOL] = awsType match {
       case b: BOOL => DynamoReadSuccess(b)
       case e => DynamoReadError("", s"was expecting BOOL got $e")
     }
   }
 
-  implicit def lRead[A <: DynamoType](implicit ra: DynamoRead[A]): DynamoRead[L[A]] = DynamoRead[L[A]] {
+  implicit def LRead[A <: DynamoType](implicit ra: DynamoRead[A]): DynamoRead[L[A]] = DynamoRead[L[A]] {
     case awsType@(l@L(e)) => sequence(e.map(a => lift(ra.read(a)))).read(awsType).map(L.apply)
     case e => DynamoReadError("", s"was expecting L got $e")
   }
@@ -105,7 +105,7 @@ trait DefaultReads {
   implicit object SSRead extends DynamoRead[SS] {
     override def read(awsType: DynamoType): DynamoReadResult[SS] = awsType match {
       case ss: SS => DynamoReadSuccess(ss)
-      case e => DynamoReadError("", s"was expecting NS got $e")
+      case e => DynamoReadError("", s"was expecting SS got $e")
     }
   }
 
