@@ -8,19 +8,19 @@ import DynamoRead._
 
 trait DynamoRead[A] { self =>
 
-  def read(awsType: DynamoType): DynamoReadResult[A]
+  def read(dynamoType: DynamoType): DynamoReadResult[A]
 
-  def map[B](f: (A => B)): DynamoRead[B] = DynamoRead[B] { awsType => self.read(awsType).map(f) }
+  def map[B](f: (A => B)): DynamoRead[B] = DynamoRead[B] { dynamoType => self.read(dynamoType).map(f) }
 
-  def flatMap[B](f: (A => DynamoRead[B])): DynamoRead[B] = DynamoRead[B] { awsType =>
-    self.read(awsType) match {
-      case DynamoReadSuccess(a) => f(a).read(awsType)
+  def flatMap[B](f: (A => DynamoRead[B])): DynamoRead[B] = DynamoRead[B] { dynamoType =>
+    self.read(dynamoType) match {
+      case DynamoReadSuccess(a) => f(a).read(dynamoType)
       case e: DynamoReadError => e
     }
   }
 }
 
-object DynamoRead extends DefaultReads with PrimitiveRead with CollectionRead {
+object DynamoRead extends DefaultReads with PrimitiveReads with CollectionRead {
 
   def pure[A](a: A): DynamoRead[A] = DynamoRead[A] { _ => DynamoReadSuccess(a) }
 
@@ -31,7 +31,7 @@ object DynamoRead extends DefaultReads with PrimitiveRead with CollectionRead {
   }
 
   def apply[A](f: (DynamoType => DynamoReadResult[A])): DynamoRead[A] = new DynamoRead[A] {
-    def read(awsType: DynamoType): DynamoReadResult[A] = f(awsType)
+    def read(dynamoType: DynamoType): DynamoReadResult[A] = f(dynamoType)
   }
 
   def read[A]: ReadAt[A] = new ReadAt[A]
@@ -59,58 +59,58 @@ object DynamoRead extends DefaultReads with PrimitiveRead with CollectionRead {
 trait DefaultReads {
 
   implicit object DynamoTypeRead extends DynamoRead[DynamoType] {
-    override def read(awsType: DynamoType): DynamoReadResult[DynamoType] = DynamoReadSuccess(awsType)
+    override def read(dynamoType: DynamoType): DynamoReadResult[DynamoType] = DynamoReadSuccess(dynamoType)
   }
 
   implicit object SRead extends DynamoRead[S] {
-    override def read(awsType: DynamoType): DynamoReadResult[S] = awsType match {
+    override def read(dynamoType: DynamoType): DynamoReadResult[S] = dynamoType match {
       case s: S => DynamoReadSuccess(s)
       case e => DynamoReadError("", s"was expecting S got $e")
     }
   }
 
   implicit object NRead extends DynamoRead[N] {
-    override def read(awsType: DynamoType): DynamoReadResult[N] = awsType match {
+    override def read(dynamoType: DynamoType): DynamoReadResult[N] = dynamoType match {
       case n: N => DynamoReadSuccess(n)
       case e => DynamoReadError("", s"was expecting N got $e")
     }
   }
 
   implicit object BOOLRead extends DynamoRead[BOOL] {
-    override def read(awsType: DynamoType): DynamoReadResult[BOOL] = awsType match {
+    override def read(dynamoType: DynamoType): DynamoReadResult[BOOL] = dynamoType match {
       case b: BOOL => DynamoReadSuccess(b)
       case e => DynamoReadError("", s"was expecting BOOL got $e")
     }
   }
 
   implicit def LRead[A <: DynamoType](implicit ra: DynamoRead[A]): DynamoRead[L[A]] = DynamoRead[L[A]] {
-    case awsType@(l@L(e)) => sequence(e.map(a => lift(ra.read(a)))).read(awsType).map(L.apply)
+    case dynamoType@(l@L(e)) => sequence(e.map(a => lift(ra.read(a)))).read(dynamoType).map(L.apply)
     case e => DynamoReadError("", s"was expecting L got $e")
   }
 
   implicit object MRead extends DynamoRead[M] {
-    override def read(awsType: DynamoType): DynamoReadResult[M] = awsType match {
+    override def read(dynamoType: DynamoType): DynamoReadResult[M] = dynamoType match {
       case m: M => DynamoReadSuccess(m)
       case e => DynamoReadError("", s"was expecting M got $e")
     }
   }
 
   implicit object NSRead extends DynamoRead[NS] {
-    override def read(awsType: DynamoType): DynamoReadResult[NS] = awsType match {
+    override def read(dynamoType: DynamoType): DynamoReadResult[NS] = dynamoType match {
       case ns: NS => DynamoReadSuccess(ns)
       case e => DynamoReadError("", s"was expecting NS got $e")
     }
   }
 
   implicit object SSRead extends DynamoRead[SS] {
-    override def read(awsType: DynamoType): DynamoReadResult[SS] = awsType match {
+    override def read(dynamoType: DynamoType): DynamoReadResult[SS] = dynamoType match {
       case ss: SS => DynamoReadSuccess(ss)
       case e => DynamoReadError("", s"was expecting SS got $e")
     }
   }
 
   implicit object NULLRead extends DynamoRead[NULL.type] {
-    override def read(awsType: DynamoType): DynamoReadResult[NULL.type] = awsType match {
+    override def read(dynamoType: DynamoType): DynamoReadResult[NULL.type] = dynamoType match {
       case nul: NULL.type => DynamoReadSuccess(NULL)
       case e => DynamoReadError("", s"was expecting NULL got $e")
     }
@@ -118,19 +118,19 @@ trait DefaultReads {
 
 }
 
-trait PrimitiveRead {
+trait PrimitiveReads {
 
   import dynamo.ast.implicits.StringOps._
 
   implicit object StringRead extends DynamoRead[String] {
-    override def read(awsType: DynamoType): DynamoReadResult[String] = awsType match {
+    override def read(dynamoType: DynamoType): DynamoReadResult[String] = dynamoType match {
       case S(value) => DynamoReadSuccess(value)
-      case e => DynamoReadError("", s"was expecting N got $e")
+      case e => DynamoReadError("", s"was expecting S got $e")
     }
   }
 
   implicit object IntRead extends DynamoRead[Int] {
-    override def read(awsType: DynamoType): DynamoReadResult[Int] = awsType match {
+    override def read(dynamoType: DynamoType): DynamoReadResult[Int] = dynamoType match {
       case N(value) if value.isValidInt => DynamoReadSuccess(value.toInt)
       case N(value) => DynamoReadError("", s"expected valid int got $value")
       case e => DynamoReadError("", s"was expecting N got $e")
@@ -138,7 +138,7 @@ trait PrimitiveRead {
   }
 
   implicit object ShortRead extends DynamoRead[Short] {
-    override def read(awsType: DynamoType): DynamoReadResult[Short] = awsType match {
+    override def read(dynamoType: DynamoType): DynamoReadResult[Short] = dynamoType match {
       case N(value) if value.isValidShort => DynamoReadSuccess(value.toShort)
       case N(value) => DynamoReadError("", s"expected valid short got $value")
       case e => DynamoReadError("", s"was expecting N got $e")
@@ -146,7 +146,7 @@ trait PrimitiveRead {
   }
 
   implicit object ByteRead extends DynamoRead[Byte] {
-    override def read(awsType: DynamoType): DynamoReadResult[Byte] = awsType match {
+    override def read(dynamoType: DynamoType): DynamoReadResult[Byte] = dynamoType match {
       case N(value) if value.isValidByte => DynamoReadSuccess(value.toByte)
       case N(value) => DynamoReadError("", s"expected valid byte got $value")
       case e => DynamoReadError("", s"was expecting N got $e")
@@ -154,7 +154,7 @@ trait PrimitiveRead {
   }
 
   implicit object LongRead extends DynamoRead[Long] {
-    override def read(awsType: DynamoType): DynamoReadResult[Long] = awsType match {
+    override def read(dynamoType: DynamoType): DynamoReadResult[Long] = dynamoType match {
       case N(value) if value.isValidLong => DynamoReadSuccess(value.toLong)
       case N(value) => DynamoReadError("", s"expected valid long got $value")
       case e => DynamoReadError("", s"was expecting N got $e")
@@ -162,7 +162,7 @@ trait PrimitiveRead {
   }
 
   implicit object FloatRead extends DynamoRead[Float] {
-    override def read(awsType: DynamoType): DynamoReadResult[Float] = awsType match {
+    override def read(dynamoType: DynamoType): DynamoReadResult[Float] = dynamoType match {
       case N(value) if value.isValidFloat => DynamoReadSuccess(value.toFloat)
       case N(value) => DynamoReadError("", s"expected valid float got $value")
       case e => DynamoReadError("", s"was expecting N got $e")
@@ -170,30 +170,36 @@ trait PrimitiveRead {
   }
 
   implicit object DoubleRead extends DynamoRead[Double] {
-    override def read(awsType: DynamoType): DynamoReadResult[Double] = awsType match {
+    override def read(dynamoType: DynamoType): DynamoReadResult[Double] = dynamoType match {
       case N(value) if value.isValidDouble => DynamoReadSuccess(value.toDouble)
       case N(value) => DynamoReadError("", s"expected valid double got $value")
       case e => DynamoReadError("", s"was expecting N got $e")
     }
   }
 
+  implicit object BooleanRead extends DynamoRead[Boolean] {
+    override def read(dynamoType: DynamoType): DynamoReadResult[Boolean] = dynamoType match {
+      case BOOL(value) => DynamoReadSuccess(value)
+      case e => DynamoReadError("", s"was expecting BOOL got $e")
+    }
+  }
 }
 
-trait CollectionRead { self: PrimitiveRead =>
+trait CollectionRead { self: PrimitiveReads =>
   implicit def listRead[A](implicit ra: DynamoRead[A]): DynamoRead[List[A]] = DynamoRead[List[A]] {
-    case awsType@(l@L(e)) => sequence(e.map(a => lift(ra.read(a)))).read(awsType)
+    case dynamoType@(l@L(e)) => sequence(e.map(a => lift(ra.read(a)))).read(dynamoType)
     case e => DynamoReadError("", s"was expecting L got $e")
   }
 
   implicit def setRead[A](implicit ra: DynamoRead[A]): DynamoRead[Set[A]] = DynamoRead[Set[A]] {
-    case awsType@(SS(e)) => sequence(e.map(a => lift(ra.read(a)))).read(awsType)
-    case awsType@(NS(e)) => sequence(e.map(a => lift(ra.read(a)))).read(awsType)
-    case awsType@(L(e)) => sequence(e.map(a => lift(ra.read(a))).toSet).read(awsType)
+    case dynamoType@(SS(e)) => sequence(e.map(a => lift(ra.read(a)))).read(dynamoType)
+    case dynamoType@(NS(e)) => sequence(e.map(a => lift(ra.read(a)))).read(dynamoType)
+    case dynamoType@(L(e)) => sequence(e.map(a => lift(ra.read(a))).toSet).read(dynamoType)
     case e => DynamoReadError("", s"was expecting SS, NS or L got $e")
   }
 
   implicit def mapRead[A](implicit ra: DynamoRead[A]): DynamoRead[Map[String, A]] = DynamoRead[Map[String, A]] {
-    case awsType@(M(e)) => sequence(e.map(a => lift(ra.read(a._2).map(r => (a._1, r))))).read(awsType).map(_.toMap)
+    case dynamoType@(M(e)) => sequence(e.map(a => lift(ra.read(a._2).map(r => (a._1, r))))).read(dynamoType).map(_.toMap)
     case e => DynamoReadError("", s"was expecting M got $e")
   }
 
