@@ -186,19 +186,19 @@ trait PrimitiveReads {
 }
 
 trait CollectionRead { self: PrimitiveReads =>
-  implicit def listRead[A](implicit ra: DynamoRead[A]): DynamoRead[List[A]] = DynamoRead[List[A]] {
+  implicit def ListRead[A](implicit ra: DynamoRead[A]): DynamoRead[List[A]] = DynamoRead[List[A]] {
     case dynamoType@(l@L(e)) => sequence(e.map(a => lift(ra.read(a)))).read(dynamoType)
     case e => DynamoReadError("", s"was expecting L got $e")
   }
 
-  implicit def setRead[A](implicit ra: DynamoRead[A]): DynamoRead[Set[A]] = DynamoRead[Set[A]] {
+  implicit def SetRead[A](implicit ra: DynamoRead[A]): DynamoRead[Set[A]] = DynamoRead[Set[A]] {
     case dynamoType@(SS(e)) => sequence(e.map(a => lift(ra.read(a)))).read(dynamoType)
     case dynamoType@(NS(e)) => sequence(e.map(a => lift(ra.read(a)))).read(dynamoType)
     case dynamoType@(L(e)) => sequence(e.map(a => lift(ra.read(a))).toSet).read(dynamoType)
     case e => DynamoReadError("", s"was expecting SS, NS or L got $e")
   }
 
-  implicit def mapRead[A](implicit ra: DynamoRead[A]): DynamoRead[Map[String, A]] = DynamoRead[Map[String, A]] {
+  implicit def MapRead[A](implicit ra: DynamoRead[A]): DynamoRead[Map[String, A]] = DynamoRead[Map[String, A]] {
     case dynamoType@(M(e)) => sequence(e.map(a => lift(ra.read(a._2).map(r => (a._1, r))))).read(dynamoType).map(_.toMap)
     case e => DynamoReadError("", s"was expecting M got $e")
   }
