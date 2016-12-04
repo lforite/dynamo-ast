@@ -12,6 +12,7 @@ class CollectionReadsTest  extends Specification with ScalaCheck { def is = s2""
 
   Reading any SS as Set should yield a success containing the Set $readSetSS
   Reading any NS as Set should yield a success containing the Set $readSetNS
+
   Reading any L as Set should yield a success containing the List $readSetL
   Reading any DynamoType which is not a L as List should yield an error $readSetFail
   """

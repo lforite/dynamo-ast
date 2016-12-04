@@ -54,6 +54,26 @@ object DynamoRead extends DefaultReads with PrimitiveReads with CollectionRead {
     }
   }
 
+  def readOpt[A]: ReadOptAt[A] = new ReadOptAt[A]
+
+  class ReadOptAt[A] {
+    def at(path: String)(implicit reads: DynamoRead[A]): DynamoRead[Option[A]] = DynamoRead[Option[A]] {
+      MRead.read(_).flatMap { m: M =>
+        m.elements.find(_._1 == path).map(_._2).fold[DynamoReadResult[Option[A]]](DynamoReadSuccess(None))(me => reads.read(me).map(e => Some(e)).withPath(path))
+      }
+    }
+  }
+
+  def readOpt(path: String) = new ReadOptAs(path)
+
+  class ReadOptAs(at: String) {
+    def as[A](implicit reads: DynamoRead[A]): DynamoRead[Option[A]] = DynamoRead[Option[A]] {
+      MRead.read(_).flatMap { m: M =>
+        m.elements.find(_._1 == at).map(_._2).fold[DynamoReadResult[Option[A]]](DynamoReadSuccess(None))(me => reads.read(me).map(e => Some(e)).withPath(at))
+      }
+    }
+  }
+
 }
 
 trait DefaultReads {
