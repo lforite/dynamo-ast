@@ -9,7 +9,7 @@ trait DynamoRead[A] { self =>
   def read(dynamoType: DynamoType): DynamoReadResult[A]
 }
 
-object DynamoRead extends DefaultReads with PrimitiveReads with CollectionRead {
+object DynamoRead extends DefaultReads with PrimitiveRead with CollectionRead {
 
   implicit val applicative: Applicative[DynamoRead] = new Applicative[DynamoRead] {
     override def pure[A](x: A): DynamoRead[A] = DynamoRead[A] { _ => DynamoReadSuccess(x) }
@@ -130,7 +130,7 @@ trait DefaultReads {
 
 }
 
-trait PrimitiveReads {
+trait PrimitiveRead {
 
   import dynamo.ast.implicits.StringOps._
 
@@ -197,7 +197,7 @@ trait PrimitiveReads {
   }
 }
 
-trait CollectionRead { self: PrimitiveReads =>
+trait CollectionRead { self: PrimitiveRead =>
   implicit def ListRead[A](implicit ra: DynamoRead[A]): DynamoRead[List[A]] = DynamoRead[List[A]] {
     case dynamoType@(l@L(e)) => e.map(a => lift(ra.read(a))).sequence[DynamoRead, A].read(dynamoType)
     case e => DynamoReadError("", s"was expecting L got $e")
