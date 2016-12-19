@@ -1,5 +1,6 @@
 package dynamo.ast.reads
 
+import cats.Applicative
 import dynamo.ast.Arbitraries._
 import dynamo.ast.{DynamoType, M, S}
 import org.specs2._
@@ -9,9 +10,6 @@ class DynamoReadTest extends Specification with ScalaCheck { def is = s2"""
   pure returns a success $pure
 
   lift should lift the result into a read $lift
-
-  sequencing a list of successes should yield a success $sequenceOk
-  sequencing a list of successes with a single error should yield an error $sequenceKo
 
   reading to an existing path should yield the value $read
   reading to a non existing path should yield an error $readPathNotFound
@@ -23,28 +21,11 @@ class DynamoReadTest extends Specification with ScalaCheck { def is = s2"""
   """
 
   def pure = prop { (dynamoType: DynamoType, any: DynamoType) =>
-    DynamoRead.pure(dynamoType).read(any) should_== DynamoReadSuccess(dynamoType)
+    Applicative[DynamoRead].pure(dynamoType).read(any) should_== DynamoReadSuccess(dynamoType)
   }
 
   def lift = prop { (dynamoReadResult: DynamoReadResult[DynamoType], any: DynamoType) =>
     DynamoRead.lift(dynamoReadResult).read(any) should_== dynamoReadResult
-  }
-
-  def sequenceOk = prop { (results: List[DynamoRead[DynamoType]], any: DynamoType) =>
-    DynamoRead.sequence(results).read(any) match {
-      case DynamoReadSuccess(_) => ok("Successfully sequenced")
-      case DynamoReadError(p, e) => ko("Was expecting sequence to yield a success")
-    }
-  }
-
-  def sequenceKo = prop { (results: List[DynamoRead[DynamoType]], any: DynamoType) =>
-    val errorRead = DynamoRead.lift[DynamoType](DynamoReadError("any_path", "Nasty error !"))
-    DynamoRead.sequence(errorRead :: results).read(any) match {
-      case DynamoReadSuccess(_) => ko("Was expecting sequence to yield an error")
-      case DynamoReadError(p, e) =>
-        p should_== "any_path"
-        e should_== "Nasty error !"
-    }
   }
 
   def read = {

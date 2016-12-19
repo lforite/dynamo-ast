@@ -1,38 +1,30 @@
 package dynamo.ast.reads
 
+import cats._
+import cats.implicits._
 import dynamo.ast._
-
-import scala.collection.generic.CanBuildFrom
-import scala.language.higherKinds
-import DynamoRead._
+import dynamo.ast.reads.DynamoRead._
 
 trait DynamoRead[A] { self =>
-
   def read(dynamoType: DynamoType): DynamoReadResult[A]
-
-  def map[B](f: (A => B)): DynamoRead[B] = DynamoRead[B] { dynamoType => self.read(dynamoType).map(f) }
-
-  def flatMap[B](f: (A => DynamoRead[B])): DynamoRead[B] = DynamoRead[B] { dynamoType =>
-    self.read(dynamoType) match {
-      case DynamoReadSuccess(a) => f(a).read(dynamoType)
-      case e: DynamoReadError => e
-    }
-  }
 }
 
 object DynamoRead extends DefaultReads with PrimitiveReads with CollectionRead {
 
-  def pure[A](a: A): DynamoRead[A] = DynamoRead[A] { _ => DynamoReadSuccess(a) }
+  implicit val applicative: Applicative[DynamoRead] = new Applicative[DynamoRead] {
+    override def pure[A](x: A): DynamoRead[A] = DynamoRead[A] { _ => DynamoReadSuccess(x) }
 
-  def lift[A](a: DynamoReadResult[A]) = DynamoRead[A] { _ => a }
-
-  def sequence[A, MO[X] <: TraversableOnce[X]](in: MO[DynamoRead[A]])(implicit cbf: CanBuildFrom[MO[DynamoRead[A]], A, MO[A]]): DynamoRead[MO[A]] = {
-    in.foldLeft(pure(cbf(in)))((acc, next) => for (acc2 <- acc; next2 <- next) yield acc2 += next2).map(_.result())
+    override def ap[A, B](ff: DynamoRead[(A) ⇒ B])(fa: DynamoRead[A]): DynamoRead[B] = DynamoRead[B] { dynamoType ⇒
+      fa.read(dynamoType) match {
+        case DynamoReadSuccess(a) ⇒ ff.read(dynamoType).map((aToB) ⇒ aToB(a))
+        case e:DynamoReadError ⇒ e
+      }
+    }
   }
 
-  def apply[A](f: (DynamoType => DynamoReadResult[A])): DynamoRead[A] = new DynamoRead[A] {
-    def read(dynamoType: DynamoType): DynamoReadResult[A] = f(dynamoType)
-  }
+  def lift[A](a: DynamoReadResult[A]): DynamoRead[A] = DynamoRead[A] { _ => a }
+
+  def apply[A](f: (DynamoType => DynamoReadResult[A])): DynamoRead[A] = (dynamoType: DynamoType) => f(dynamoType)
 
   def read[A]: ReadAt[A] = new ReadAt[A]
 
@@ -104,7 +96,7 @@ trait DefaultReads {
   }
 
   implicit def LRead[A <: DynamoType](implicit ra: DynamoRead[A]): DynamoRead[L[A]] = DynamoRead[L[A]] {
-    case dynamoType@(l@L(e)) => sequence(e.map(a => lift(ra.read(a)))).read(dynamoType).map(L.apply)
+    case dynamoType@(L(e)) => e.map(a => lift(ra.read(a))).sequence[DynamoRead, A].read(dynamoType).map(L.apply)
     case e => DynamoReadError("", s"was expecting L got $e")
   }
 
@@ -207,19 +199,19 @@ trait PrimitiveReads {
 
 trait CollectionRead { self: PrimitiveReads =>
   implicit def ListRead[A](implicit ra: DynamoRead[A]): DynamoRead[List[A]] = DynamoRead[List[A]] {
-    case dynamoType@(l@L(e)) => sequence(e.map(a => lift(ra.read(a)))).read(dynamoType)
+    case dynamoType@(l@L(e)) => e.map(a => lift(ra.read(a))).sequence[DynamoRead, A].read(dynamoType)
     case e => DynamoReadError("", s"was expecting L got $e")
   }
 
   implicit def SetRead[A](implicit ra: DynamoRead[A]): DynamoRead[Set[A]] = DynamoRead[Set[A]] {
-    case dynamoType@(SS(e)) => sequence(e.map(a => lift(ra.read(a)))).read(dynamoType)
-    case dynamoType@(NS(e)) => sequence(e.map(a => lift(ra.read(a)))).read(dynamoType)
-    case dynamoType@(L(e)) => sequence(e.map(a => lift(ra.read(a))).toSet).read(dynamoType)
+    case dynamoType@(SS(e)) => e.map(a => lift(ra.read(a))).toList.sequence[DynamoRead, A].map(_.toSet).read(dynamoType)
+    case dynamoType@(NS(e)) => e.map(a => lift(ra.read(a))).toList.sequence[DynamoRead, A].map(_.toSet).read(dynamoType)
+    case dynamoType@(L(e)) => e.map(a => lift(ra.read(a))).sequence[DynamoRead, A].map(_.toSet).read(dynamoType)
     case e => DynamoReadError("", s"was expecting SS, NS or L got $e")
   }
 
   implicit def MapRead[A](implicit ra: DynamoRead[A]): DynamoRead[Map[String, A]] = DynamoRead[Map[String, A]] {
-    case dynamoType@(M(e)) => sequence(e.map(a => lift(ra.read(a._2).map(r => (a._1, r))))).read(dynamoType).map(_.toMap)
+    case dynamoType@(M(e)) => e.map(a => lift(ra.read(a._2).map(r => (a._1, r)))).sequence[DynamoRead, (String, A)].read(dynamoType).map(_.toMap)
     case e => DynamoReadError("", s"was expecting M got $e")
   }
 

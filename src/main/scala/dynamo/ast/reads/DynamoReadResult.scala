@@ -17,5 +17,5 @@ sealed trait DynamoReadResult[+A] {
   }
 }
 
-case class DynamoReadSuccess[A](a: A) extends DynamoReadResult[A]
+case class DynamoReadSuccess[+A](a: A) extends DynamoReadResult[A]
 case class DynamoReadError(path: String, error: String) extends DynamoReadResult[Nothing]

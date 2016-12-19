@@ -1,6 +1,8 @@
 package dynamo.ast
 
 import dynamo.ast.reads.DynamoRead
+import dynamo.ast.reads.DynamoRead._
+import cats.implicits._
 
 
 object PlayGround {
@@ -16,9 +18,18 @@ object PlayGround {
       "desc" -> M(List("title" -> S("is it working ?"))),
       "translations" -> M(List("fr_FR" -> S("The world is mine")))))
     println(Image.imageDynamoFormat.read(m))
+
+   val test: DynamoRead[TinyImage] =
+     (read("url").as[String]
+        |@| read("alt").as[String]) map TinyImage.apply
+
+    println(test.read(M(List("url" -> S("the url "),
+      "alt" -> S("alternative")))))
+
   }
 }
 
+case class TinyImage(url: String, alt: String)
 case class Product(
   id: String,
   title: String,
@@ -45,16 +56,14 @@ object Image {
   import DynamoRead._
 
   implicit val imageDynamoFormat: DynamoRead[Image] =
-    (for {
-      url <- read("url").as[String]
-      alt <- read[String].at("alt")
-      urls <- read[List[String]].at("urls")
-      currencies <- read[Set[String]].at("currencies")
-      prices <- read("prices").as[Set[Float]]
-      desc <- read[Desc].at("desc")
-      price <- read[Int].at("price")
-      translations <- read[Map[String, String]].at("translations")
-    } yield (url, alt, urls, currencies, prices, desc, price, translations)) map (Image.apply _).tupled
+    (read("url").as[String] |@|
+        read[String].at("alt") |@|
+        read[List[String]].at("urls") |@|
+        read[Set[String]].at("currencies") |@|
+        read("prices").as[Set[Float]] |@|
+        read[Desc].at("desc") |@|
+        read[Int].at("price") |@|
+        read[Map[String, String]].at("translations")) map Image.apply
 }
 
 
