@@ -14,10 +14,10 @@ object DynamoRead extends DefaultReads with PrimitiveRead with CollectionRead {
   implicit val applicative: Applicative[DynamoRead] = new Applicative[DynamoRead] {
     override def pure[A](x: A): DynamoRead[A] = DynamoRead[A] { _ => DynamoReadSuccess(x) }
 
-    override def ap[A, B](ff: DynamoRead[(A) ⇒ B])(fa: DynamoRead[A]): DynamoRead[B] = DynamoRead[B] { dynamoType ⇒
+    override def ap[A, B](ff: DynamoRead[(A) => B])(fa: DynamoRead[A]): DynamoRead[B] = DynamoRead[B] { dynamoType =>
       fa.read(dynamoType) match {
-        case DynamoReadSuccess(a) ⇒ ff.read(dynamoType).map((aToB) ⇒ aToB(a))
-        case e:DynamoReadError ⇒ e
+        case DynamoReadSuccess(a) => ff.read(dynamoType).map((aToB) => aToB(a))
+        case e:DynamoReadError => e
       }
     }
   }
