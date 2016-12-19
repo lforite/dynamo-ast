@@ -14,31 +14,31 @@ class PrimitiveWriteTest extends Specification with ScalaCheck { def is = s2"""
   Writing any Boolean should yield a success containing an BOOL containing the Boolean as String $writeBoolean
 """
 
-  def writeString = prop { string: String ⇒
+  def writeString = prop { string: String =>
     DynamoWrite.StringWrite.write(string) should_== S(string)
   }
 
-  def writeInt = prop { int: Int ⇒
-    DynamoWrite.IntWrite.write(int) should_== N(int.toString)
+  def writeInt = prop { int: Int =>
+    DynamoWrite[Int].write(int) should_== N(int.toString)
   }
 
-  def writeShort = prop { short: Short ⇒
-    DynamoWrite.ShortWrite.write(short) should_== N(short.toString)
+  def writeShort = prop { short: Short =>
+    DynamoWrite[Short].write(short) should_== N(short.toString)
   }
 
-  def writeLong = prop { long: Long ⇒
-    DynamoWrite.LongWrite.write(long) should_== N(long.toString)
+  def writeLong = prop { long: Long =>
+    DynamoWrite[Long].write(long) should_== N(long.toString)
   }
 
-  def writeFloat = prop { float: Float ⇒
-    DynamoWrite.FloatWrite.write(float) should_== N(float.toString)
+  def writeFloat = prop { float: Float =>
+    DynamoWrite[Float].write(float) should_== N(float.toString)
   }
 
-  def writeDouble = prop { double: Double ⇒
-    DynamoWrite.DoubleWrite.write(double) should_== N(double.toString)
+  def writeDouble = prop { double: Double =>
+    DynamoWrite[Double].write(double) should_== N(double.toString)
   }
 
-  def writeBoolean = prop { boolean: Boolean ⇒
-    DynamoWrite.BooleanWrite.write(boolean) should_== BOOL(boolean)
+  def writeBoolean = prop { boolean: Boolean =>
+    DynamoWrite[Boolean].write(boolean) should_== BOOL(boolean)
   }
 }

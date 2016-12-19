@@ -48,13 +48,13 @@ trait PrimitiveWrite {
   }
 }
 
-trait CollectionWrite { self: PrimitiveWrite ⇒
+trait CollectionWrite { self: PrimitiveWrite =>
   implicit def ListWrite[A](implicit ra: DynamoWrite[A]): DynamoWrite[List[A]] = (as: List[A]) => L(as.map(ra.write))
   implicit def SetWriteString: DynamoWrite[Set[String]] = (as: Set[String]) => SS(as.map(StringWrite.write))
   implicit def SetWriteInt: DynamoWrite[Set[Int]] = (as: Set[Int]) => NS(as.map(IntWrite.write))
-  implicit def SetWriteFloat: DynamoWrite[Set[Float]] = (as: Set[Float]) => NS(as.map(FloatWrite.write))
   implicit def SetWriteShort: DynamoWrite[Set[Short]] = (as: Set[Short]) => NS(as.map(ShortWrite.write))
+  implicit def SetWriteFloat: DynamoWrite[Set[Float]] = (as: Set[Float]) => NS(as.map(FloatWrite.write))
   implicit def SetWriteLong: DynamoWrite[Set[Long]] = (as: Set[Long]) => NS(as.map(LongWrite.write))
   implicit def SetWriteDouble: DynamoWrite[Set[Double]] = (as: Set[Double]) => NS(as.map(DoubleWrite.write))
-  implicit def MapWrite[A](implicit ra: DynamoWrite[A]): DynamoWrite[Map[String, A]] = (a: Map[String, A]) => M(a.map(kv ⇒ (kv._1, ra.write(kv._2))).toList)
+  implicit def MapWrite[A](implicit ra: DynamoWrite[A]): DynamoWrite[Map[String, A]] = (a: Map[String, A]) => M(a.map(kv => (kv._1, ra.write(kv._2))).toList)
 }
