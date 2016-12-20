@@ -1,4 +1,4 @@
-# Dynamite
+# Dynamo-ast [![Build Status](https://travis-ci.org/louis-forite/dynamo-ast.png?branch=master)](https://travis-ci.org/louis-forite/dynamo-ast)
 
 A tiny library to encode DynamoDB AST.
 
