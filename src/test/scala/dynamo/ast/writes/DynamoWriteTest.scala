@@ -11,11 +11,11 @@ class DynamoWriteTest extends Specification { def is = s2"""
 """
 
   def write = {
-    DynamoWrite.write[String].at("test").write("test_string") should_== M(List("test" → S("test_string")))
+    DynamoWrite.write[String].at("test").write("test_string") should_== M(List("test" -> S("test_string")))
   }
 
   def writeOptPresent = {
-    DynamoWrite.writeOpt[String].at("test").write(Some("test_string")) should_== M(List("test" → S("test_string")))
+    DynamoWrite.writeOpt[String].at("test").write(Some("test_string")) should_== M(List("test" -> S("test_string")))
   }
 
   def writeOptAbsent = {
