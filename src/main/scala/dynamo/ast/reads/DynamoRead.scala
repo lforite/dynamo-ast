@@ -11,15 +11,23 @@ trait DynamoRead[A] { self =>
 
 object DynamoRead extends DefaultReads with PrimitiveRead with CollectionRead {
 
-  implicit val applicative: Applicative[DynamoRead] = new Applicative[DynamoRead] {
-    override def pure[A](x: A): DynamoRead[A] = DynamoRead[A] { _ => DynamoReadSuccess(x) }
-
-    override def ap[A, B](ff: DynamoRead[(A) => B])(fa: DynamoRead[A]): DynamoRead[B] = DynamoRead[B] { dynamoType =>
-      fa.read(dynamoType) match {
-        case DynamoReadSuccess(a) => ff.read(dynamoType).map((aToB) => aToB(a))
-        case e:DynamoReadError => e
+  implicit val monadDynamoRead: Monad[DynamoRead] = new Monad[DynamoRead] {
+    def pure[A](x: A): DynamoRead[A] = DynamoRead[A] { _ => DynamoReadSuccess(x) }
+    def flatMap[A, B](fa: DynamoRead[A])(f: (A) => DynamoRead[B]): DynamoRead[B] =
+      DynamoRead { x =>
+        fa.read(x) match {
+          case DynamoReadSuccess(a) => f(a).read(x)
+          case DynamoReadError(path, err) => DynamoReadError(path, err)
+        }
       }
-    }
+    def tailRecM[A, B](a: A)(f: (A) => DynamoRead[Either[A, B]]): DynamoRead[B] =
+      DynamoRead { x =>
+        f(a).read(x) match {
+          case DynamoReadSuccess(Left(a)) => tailRecM(a)(f).read(x)
+          case DynamoReadSuccess(Right(result)) => DynamoReadSuccess(result)
+          case DynamoReadError(path, err) => DynamoReadError(path, err)
+        }
+      }
   }
 
   def lift[A](a: DynamoReadResult[A]): DynamoRead[A] = DynamoRead[A] { _ => a }
