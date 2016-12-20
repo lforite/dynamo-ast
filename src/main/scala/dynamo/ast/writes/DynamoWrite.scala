@@ -1,19 +1,37 @@
-package dynamo.ast.write
+package dynamo.ast.writes
 
+import cats.ContravariantCartesian
 import dynamo.ast._
 
-trait DynamoWrite[A] {
+trait DynamoWrite[-A] {
   def write(a: A): DynamoType
 }
 
 object DynamoWrite extends PrimitiveWrite with CollectionWrite {
   def apply[A](implicit write: DynamoWrite[A]): DynamoWrite[A] = write
-  def m(fields: (String, DynamoType)*): DynamoType = M(fields.toList)
 
-  def at(path: String) = new WriteAt(path)
-  class WriteAt(path: String) {
-    def write[A](a: A)(implicit dynamoWrite: DynamoWrite[A]): (String, DynamoType) = {
-      (path, dynamoWrite.write(a))
+  def write[A]: WriteAt[A] = new WriteAt[A]
+  class WriteAt[A] {
+    def at(path: String)(implicit dynamoWrite: DynamoWrite[A]): DynamoMWrite[A] = (a: A) => M(List(path → dynamoWrite.write(a)))
+  }
+}
+
+trait DynamoMWrite[-A] extends DynamoWrite[A] {
+  def write(a: A): M
+}
+
+object DynamoMWrite {
+  implicit val contravariant: ContravariantCartesian[DynamoMWrite] = new ContravariantCartesian[DynamoMWrite] {
+    override def product[A, B](fa: DynamoMWrite[A], fb: DynamoMWrite[B]): DynamoMWrite[(A, B)] = new DynamoMWrite[(A, B)] {
+      override def write(a: (A, B)): M = {
+        val as = fa.write(a._1).elements.toMap
+        val bs = fb.write(a._2).elements.toMap
+        M((as ++ bs).toList)
+      }
+    }
+
+    override def contramap[A, B](fa: DynamoMWrite[A])(f: (B) ⇒ A): DynamoMWrite[B] = new DynamoMWrite[B] {
+      override def write(b: B): M = fa.write(f(b))
     }
   }
 }
@@ -48,7 +66,8 @@ trait PrimitiveWrite {
   }
 }
 
-trait CollectionWrite { self: PrimitiveWrite =>
+trait CollectionWrite {
+  self: PrimitiveWrite =>
   implicit def ListWrite[A](implicit ra: DynamoWrite[A]): DynamoWrite[List[A]] = (as: List[A]) => L(as.map(ra.write))
   implicit def SetWriteString: DynamoWrite[Set[String]] = (as: Set[String]) => SS(as.map(StringWrite.write))
   implicit def SetWriteInt: DynamoWrite[Set[Int]] = (as: Set[Int]) => NS(as.map(IntWrite.write))

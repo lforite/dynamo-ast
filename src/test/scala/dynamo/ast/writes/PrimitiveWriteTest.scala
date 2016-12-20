@@ -1,4 +1,4 @@
-package dynamo.ast.write
+package dynamo.ast.writes
 
 import dynamo.ast._
 import org.specs2.{ScalaCheck, Specification}
