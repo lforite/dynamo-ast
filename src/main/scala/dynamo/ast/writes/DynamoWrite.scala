@@ -14,6 +14,13 @@ object DynamoWrite extends PrimitiveWrite with CollectionWrite {
   class WriteAt[A] {
     def at(path: String)(implicit dynamoWrite: DynamoWrite[A]): DynamoMWrite[A] = (a: A) => M(List(path → dynamoWrite.write(a)))
   }
+
+  def writeOpt[A]: WriteOptAt[A] = new WriteOptAt[A]
+  class WriteOptAt[A] {
+    def at(path: String)(implicit dynamoWrite: DynamoWrite[A]): DynamoMWrite[Option[A]] = (aOpt: Option[A]) => {
+      aOpt.fold(M(Nil))(a ⇒ M(List(path → dynamoWrite.write(a))))
+    }
+  }
 }
 
 trait DynamoMWrite[-A] extends DynamoWrite[A] {

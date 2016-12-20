@@ -4,7 +4,7 @@ import dynamo.ast.Arbitraries._
 import dynamo.ast._
 import org.specs2.{ScalaCheck, Specification}
 
-class CollectionReadsTest  extends Specification with ScalaCheck { def is = s2"""
+class CollectionReadsTest extends Specification with ScalaCheck { def is = s2"""
  Specification for the collection reads
 
   Reading any L as List should yield a success containing the List $readList
