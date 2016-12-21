@@ -12,13 +12,15 @@ object DynamoWrite extends PrimitiveWrite with CollectionWrite {
 
   def write[A]: WriteAt[A] = new WriteAt[A]
   class WriteAt[A] {
-    def at(path: String)(implicit dynamoWrite: DynamoWrite[A]): DynamoMWrite[A] = (a: A) => M(List(path -> dynamoWrite.write(a)))
+    def at(path: String)(implicit dynamoWrite: DynamoWrite[A]): DynamoMWrite[A] = new DynamoMWrite[A] {
+      override def write(a: A): M = M(List(path -> dynamoWrite.write(a)))
+    }
   }
 
   def writeOpt[A]: WriteOptAt[A] = new WriteOptAt[A]
   class WriteOptAt[A] {
-    def at(path: String)(implicit dynamoWrite: DynamoWrite[A]): DynamoMWrite[Option[A]] = (aOpt: Option[A]) => {
-      aOpt.fold(M(Nil))(a => M(List(path -> dynamoWrite.write(a))))
+    def at(path: String)(implicit dynamoWrite: DynamoWrite[A]): DynamoMWrite[Option[A]] = new DynamoMWrite[Option[A]]{
+      override def write(aOpt: Option[A]): M = aOpt.fold(M(Nil))(a => M(List(path -> dynamoWrite.write(a))))
     }
   }
 }
@@ -73,14 +75,38 @@ trait PrimitiveWrite {
   }
 }
 
-trait CollectionWrite {
-  self: PrimitiveWrite =>
-  implicit def ListWrite[A](implicit ra: DynamoWrite[A]): DynamoWrite[List[A]] = (as: List[A]) => L(as.map(ra.write))
-  implicit def SetWriteString: DynamoWrite[Set[String]] = (as: Set[String]) => SS(as.map(StringWrite.write))
-  implicit def SetWriteInt: DynamoWrite[Set[Int]] = (as: Set[Int]) => NS(as.map(IntWrite.write))
-  implicit def SetWriteShort: DynamoWrite[Set[Short]] = (as: Set[Short]) => NS(as.map(ShortWrite.write))
-  implicit def SetWriteFloat: DynamoWrite[Set[Float]] = (as: Set[Float]) => NS(as.map(FloatWrite.write))
-  implicit def SetWriteLong: DynamoWrite[Set[Long]] = (as: Set[Long]) => NS(as.map(LongWrite.write))
-  implicit def SetWriteDouble: DynamoWrite[Set[Double]] = (as: Set[Double]) => NS(as.map(DoubleWrite.write))
-  implicit def MapWrite[A](implicit ra: DynamoWrite[A]): DynamoWrite[Map[String, A]] = (a: Map[String, A]) => M(a.map(kv => (kv._1, ra.write(kv._2))).toList)
+trait CollectionWrite { self: PrimitiveWrite =>
+
+  implicit def ListWrite[A](implicit ra: DynamoWrite[A]): DynamoWrite[List[A]] = new DynamoWrite[List[A]] {
+    override def write(as: List[A]): DynamoType = L(as.map(ra.write))
+  }
+
+  implicit def SetWriteString: DynamoWrite[Set[String]] = new DynamoWrite[Set[String]] {
+    override def write(a: Set[String]): DynamoType = SS(a.map(StringWrite.write))
+  }
+
+  implicit def SetWriteInt: DynamoWrite[Set[Int]] = new DynamoWrite[Set[Int]] {
+    override def write(a: Set[Int]): DynamoType = NS(a.map(IntWrite.write))
+  }
+
+  implicit def SetWriteShort: DynamoWrite[Set[Short]] = new DynamoWrite[Set[Short]] {
+    override def write(as: Set[Short]): DynamoType = NS(as.map(ShortWrite.write))
+  }
+
+  implicit def SetWriteFloat: DynamoWrite[Set[Float]] = new DynamoWrite[Set[Float]] {
+    override def write(as: Set[Float]): DynamoType = NS(as.map(FloatWrite.write))
+  }
+
+  implicit def SetWriteLong: DynamoWrite[Set[Long]] = new DynamoWrite[Set[Long]] {
+    override def write(as: Set[Long]): DynamoType = NS(as.map(LongWrite.write))
+  }
+
+  implicit def SetWriteDouble: DynamoWrite[Set[Double]] = new DynamoWrite[Set[Double]] {
+    override def write(as: Set[Double]): DynamoType = NS(as.map(DoubleWrite.write))
+  }
+
+  implicit def MapWrite[A](implicit ra: DynamoWrite[A]): DynamoWrite[Map[String, A]] = new DynamoWrite[Map[String, A]] {
+    override def write(a: Map[String, A]): DynamoType = M(a.map(kv => (kv._1, ra.write(kv._2))).toList)
+  }
+
 }

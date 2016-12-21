@@ -12,54 +12,68 @@ trait DynamoRead[A] { self =>
 object DynamoRead extends DefaultReads with PrimitiveRead with CollectionRead {
 
   implicit val applicative: Applicative[DynamoRead] = new Applicative[DynamoRead] {
-    override def pure[A](x: A): DynamoRead[A] = (_: DynamoType) => DynamoReadSuccess(x)
+    override def pure[A](x: A): DynamoRead[A] = new DynamoRead[A] {
+      override def read(dynamoType: DynamoType): DynamoReadResult[A] = DynamoReadSuccess(x)
+    }
 
-    override def ap[A, B](ff: DynamoRead[(A) => B])(fa: DynamoRead[A]): DynamoRead[B] = (dynamoType: DynamoType) => {
-      fa.read(dynamoType) match {
+    override def ap[A, B](ff: DynamoRead[(A) => B])(fa: DynamoRead[A]): DynamoRead[B] = new DynamoRead[B] {
+      override def read(dynamoType: DynamoType): DynamoReadResult[B] = fa.read(dynamoType) match {
         case DynamoReadSuccess(a) => ff.read(dynamoType).map((aToB) => aToB(a))
         case e: DynamoReadError => e
       }
     }
   }
 
-  def lift[A](a: DynamoReadResult[A]): DynamoRead[A] = (_: DynamoType) => a
+  def lift[A](a: DynamoReadResult[A]): DynamoRead[A] = new DynamoRead[A] {
+    override def read(dynamoType: DynamoType): DynamoReadResult[A] = a
+  }
 
   def apply[A](implicit read: DynamoRead[A]): DynamoRead[A] = read
 
   def read[A]: ReadAt[A] = new ReadAt[A]
 
   class ReadAt[A] {
-    def at(path: String)(implicit reads: DynamoRead[A]): DynamoRead[A] = (dynamoType: DynamoType) =>
-      MRead.read(dynamoType).flatMap { m: M =>
-        m.elements.find(_._1 == path).map(_._2).fold[DynamoReadResult[A]](DynamoReadError(path, "Path not found"))(me => reads.read(me).withPath(path))
+    def at(path: String)(implicit reads: DynamoRead[A]): DynamoRead[A] = new DynamoRead[A] {
+      override def read(dynamoType: DynamoType): DynamoReadResult[A] = {
+        MRead.read(dynamoType).flatMap { m: M =>
+          m.elements.find(_._1 == path).map(_._2).fold[DynamoReadResult[A]](DynamoReadError(path, "Path not found"))(me => reads.read(me).withPath(path))
+        }
       }
+    }
   }
 
   def read(path: String) = new ReadAs(path)
 
   class ReadAs(at: String) {
-    def as[A](implicit reads: DynamoRead[A]): DynamoRead[A] = (dynamoType: DynamoType) =>
-      MRead.read(dynamoType).flatMap { m: M =>
+    def as[A](implicit reads: DynamoRead[A]): DynamoRead[A] = new DynamoRead[A] {
+      override def read(dynamoType: DynamoType): DynamoReadResult[A] = MRead.read(dynamoType).flatMap { m: M =>
         m.elements.find(_._1 == at).map(_._2).fold[DynamoReadResult[A]](DynamoReadError(at, "Path not found"))(me => reads.read(me).withPath(at))
       }
     }
+  }
 
   def readOpt[A]: ReadOptAt[A] = new ReadOptAt[A]
 
   class ReadOptAt[A] {
-    def at(path: String)(implicit reads: DynamoRead[A]): DynamoRead[Option[A]] = (dynamoType: DynamoType) =>
-      MRead.read(dynamoType).flatMap { m: M =>
-        m.elements.find(_._1 == path).map(_._2).fold[DynamoReadResult[Option[A]]](DynamoReadSuccess(None))(me => reads.read(me).map(e => Some(e)).withPath(path))
+    def at(path: String)(implicit reads: DynamoRead[A]): DynamoRead[Option[A]] = new DynamoRead[Option[A]] {
+      override def read(dynamoType: DynamoType): DynamoReadResult[Option[A]] =  {
+        MRead.read(dynamoType).flatMap { m: M =>
+          m.elements.find(_._1 == path).map(_._2).fold[DynamoReadResult[Option[A]]](DynamoReadSuccess(None))(me => reads.read(me).map(e => Some(e)).withPath(path))
+        }
       }
+    }
   }
 
   def readOpt(path: String) = new ReadOptAs(path)
 
   class ReadOptAs(at: String) {
-    def as[A](implicit reads: DynamoRead[A]): DynamoRead[Option[A]] = (dynamoType: DynamoType) =>
-      MRead.read(dynamoType).flatMap { m: M =>
-        m.elements.find(_._1 == at).map(_._2).fold[DynamoReadResult[Option[A]]](DynamoReadSuccess(None))(me => reads.read(me).map(e => Some(e)).withPath(at))
+    def as[A](implicit reads: DynamoRead[A]): DynamoRead[Option[A]] =  new DynamoRead[Option[A]] {
+      override def read(dynamoType: DynamoType): DynamoReadResult[Option[A]] = {
+        MRead.read(dynamoType).flatMap { m: M =>
+          m.elements.find(_._1 == at).map(_._2).fold[DynamoReadResult[Option[A]]](DynamoReadSuccess(None))(me => reads.read(me).map(e => Some(e)).withPath(at))
+        }
       }
+    }
   }
 
 }
@@ -91,9 +105,11 @@ trait DefaultReads {
     }
   }
 
-  implicit def LRead[A <: DynamoType](implicit ra: DynamoRead[A]): DynamoRead[L[A]] = {
-    case dynamoType@(L(e)) => e.map(a => lift(ra.read(a))).sequence[DynamoRead, A].read(dynamoType).map(L.apply)
-    case e => DynamoReadError("", s"was expecting L got $e")
+  implicit def LRead[A <: DynamoType](implicit ra: DynamoRead[A]): DynamoRead[L[A]] = new DynamoRead[L[A]]{
+    override def read(dynamoType: DynamoType): DynamoReadResult[L[A]] = dynamoType match {
+      case dynamoType@(L(e)) => e.map(a => lift(ra.read(a))).sequence[DynamoRead, A].read(dynamoType).map(L.apply)
+      case e => DynamoReadError("", s"was expecting L got $e")
+    }
   }
 
   implicit object MRead extends DynamoRead[M] {
@@ -193,22 +209,29 @@ trait PrimitiveRead {
   }
 }
 
-trait CollectionRead { self: PrimitiveRead =>
-  implicit def ListRead[A](implicit ra: DynamoRead[A]): DynamoRead[List[A]] = {
-    case dynamoType@(l@L(e)) => e.map(a => lift(ra.read(a))).sequence[DynamoRead, A].read(dynamoType)
-    case e => DynamoReadError("", s"was expecting L got $e")
+trait CollectionRead {
+  self: PrimitiveRead =>
+  implicit def ListRead[A](implicit ra: DynamoRead[A]): DynamoRead[List[A]] = new DynamoRead[List[A]] {
+    override def read(dynamoType: DynamoType): DynamoReadResult[List[A]] = dynamoType match {
+      case dynamoType@(l@L(e)) => e.map(a => lift(ra.read(a))).sequence[DynamoRead, A].read(dynamoType)
+      case e => DynamoReadError("", s"was expecting L got $e")
+    }
   }
 
-  implicit def SetRead[A](implicit ra: DynamoRead[A]): DynamoRead[Set[A]] = {
-    case dynamoType@(SS(e)) => e.map(a => lift(ra.read(a))).toList.sequence[DynamoRead, A].map(_.toSet).read(dynamoType)
-    case dynamoType@(NS(e)) => e.map(a => lift(ra.read(a))).toList.sequence[DynamoRead, A].map(_.toSet).read(dynamoType)
-    case dynamoType@(L(e)) => e.map(a => lift(ra.read(a))).sequence[DynamoRead, A].map(_.toSet).read(dynamoType)
-    case e => DynamoReadError("", s"was expecting SS, NS or L got $e")
+  implicit def SetRead[A](implicit ra: DynamoRead[A]): DynamoRead[Set[A]] = new DynamoRead[Set[A]] {
+    override def read(dynamoType: DynamoType): DynamoReadResult[Set[A]] = dynamoType match {
+      case dynamoType@(SS(e)) => e.map(a => lift(ra.read(a))).toList.sequence[DynamoRead, A].map(_.toSet).read(dynamoType)
+      case dynamoType@(NS(e)) => e.map(a => lift(ra.read(a))).toList.sequence[DynamoRead, A].map(_.toSet).read(dynamoType)
+      case dynamoType@(L(e)) => e.map(a => lift(ra.read(a))).sequence[DynamoRead, A].map(_.toSet).read(dynamoType)
+      case e => DynamoReadError("", s"was expecting SS, NS or L got $e")
+    }
   }
 
-  implicit def MapRead[A](implicit ra: DynamoRead[A]): DynamoRead[Map[String, A]] = {
-    case dynamoType@(M(e)) => e.map(a => lift(ra.read(a._2).map(r => (a._1, r)))).sequence[DynamoRead, (String, A)].read(dynamoType).map(_.toMap)
-    case e => DynamoReadError("", s"was expecting M got $e")
+  implicit def MapRead[A](implicit ra: DynamoRead[A]): DynamoRead[Map[String, A]] = new DynamoRead[Map[String, A]] {
+    override def read(dynamoType: DynamoType): DynamoReadResult[Map[String, A]] =  dynamoType match {
+      case M(e) => e.map(a => lift(ra.read(a._2).map(r => (a._1, r)))).sequence[DynamoRead, (String, A)].read(dynamoType).map(_.toMap)
+      case e => DynamoReadError("", s"was expecting M got $e")
+    }
   }
 
 }
