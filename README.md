@@ -1,7 +1,14 @@
-# Dynamo-ast [![Build Status](https://travis-ci.org/louis-forite/dynamo-ast.png?branch=master)](https://travis-ci.org/louis-forite/dynamo-ast)
+# Dynamo-ast
+[![Build Status](https://travis-ci.org/louis-forite/dynamo-ast.png?branch=master)](https://travis-ci.org/louis-forite/dynamo-ast)
+A tiny library to encode DynamoDB AST. Defines types classes to read/write from/to DynamoDb types. Deeply inspired by [play-json](https://github.com/playframework/play-json) design.
 
-A tiny library to encode DynamoDB AST.
+Installation
+-----------------------
 
+```scala
+libraryDependencies += "com.github.louis-forite" %% "dynamo-ast" % "0.1"
+resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/releases"
+```
 
 Minimal working example
 -----------------------
