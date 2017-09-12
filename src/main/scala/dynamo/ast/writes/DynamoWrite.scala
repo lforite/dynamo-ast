@@ -1,6 +1,7 @@
 package dynamo.ast.writes
 
 import cats.ContravariantCartesian
+import cats.functor.Contravariant
 import dynamo.ast._
 
 trait DynamoWrite[-A] {
@@ -9,6 +10,10 @@ trait DynamoWrite[-A] {
 
 object DynamoWrite extends PrimitiveWrite with CollectionWrite {
   def apply[A](implicit write: DynamoWrite[A]): DynamoWrite[A] = write
+
+  implicit val contravariantWrites: Contravariant[DynamoWrite] = new Contravariant[DynamoWrite] {
+    override def contramap[A, B](fa: DynamoWrite[A])(f: (B) => A): DynamoWrite[B] = DynamoWrite[B](b => fa.write(f(b)))
+  }
 
   def write[A]: WriteAt[A] = new WriteAt[A]
   class WriteAt[A] {
