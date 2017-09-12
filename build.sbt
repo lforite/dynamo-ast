@@ -2,7 +2,7 @@ name := "dynamo-ast"
 
 organization := "com.github.louis-forite"
 
-version := "0.1"
+version := "0.2"
 
 scalaVersion := "2.12.0"
 crossScalaVersions := Seq("2.11.8", "2.12.0")
