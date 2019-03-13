@@ -1,7 +1,6 @@
 package dynamo.ast.writes
 
-import cats.ContravariantCartesian
-import cats.functor.Contravariant
+import cats.{Contravariant, ContravariantSemigroupal}
 import dynamo.ast._
 
 trait DynamoWrite[-A] {
@@ -12,8 +11,8 @@ object DynamoWrite extends PrimitiveWrite with CollectionWrite {
   def apply[A](implicit write: DynamoWrite[A]): DynamoWrite[A] = write
 
   implicit val contravariantWrites: Contravariant[DynamoWrite] = new Contravariant[DynamoWrite] {
-    override def contramap[A, B](fa: DynamoWrite[A])(f: (B) => A): DynamoWrite[B] = new DynamoWrite[B]{
-      override def write(b: B) = fa.write(f(b))
+    override def contramap[A, B](fa: DynamoWrite[A])(f: B => A): DynamoWrite[B] = new DynamoWrite[B]{
+      override def write(b: B): DynamoType = fa.write(f(b))
     }
   }
 
@@ -37,7 +36,7 @@ trait DynamoMWrite[-A] extends DynamoWrite[A] {
 }
 
 object DynamoMWrite {
-  implicit val contravariant: ContravariantCartesian[DynamoMWrite] = new ContravariantCartesian[DynamoMWrite] {
+  implicit val contravariant: ContravariantSemigroupal[DynamoMWrite] = new ContravariantSemigroupal[DynamoMWrite] {
     override def product[A, B](fa: DynamoMWrite[A], fb: DynamoMWrite[B]): DynamoMWrite[(A, B)] = new DynamoMWrite[(A, B)] {
       override def write(a: (A, B)): M = {
         val as = fa.write(a._1).elements.toMap
@@ -46,7 +45,7 @@ object DynamoMWrite {
       }
     }
 
-    override def contramap[A, B](fa: DynamoMWrite[A])(f: (B) => A): DynamoMWrite[B] = new DynamoMWrite[B] {
+    override def contramap[A, B](fa: DynamoMWrite[A])(f: B => A): DynamoMWrite[B] = new DynamoMWrite[B] {
       override def write(b: B): M = fa.write(f(b))
     }
   }

@@ -27,16 +27,16 @@ class DynamoWriteTest extends Specification { def is = s2"""
 
   def writeProduct = {
     val writer: DynamoWrite[(String, String)] =
-    (DynamoWrite.write[String].at("field1")
-        |@| DynamoWrite.write[String].at("field2")).contramap[(String, String)](z => (z._1, z._2))
+    (DynamoWrite.write[String].at("field1"),
+      DynamoWrite.write[String].at("field2")).contramapN[(String, String)](z => (z._1, z._2))
 
     writer.write(("value1", "value2")) should_== M(List("field1" -> S("value1"), "field2" -> S("value2")))
   }
 
   def writeProductErase = {
     val writer: DynamoWrite[(String, String)] =
-      (DynamoWrite.write[String].at("field1")
-          |@| DynamoWrite.write[String].at("field1")).contramap[(String, String)](z => (z._1, z._2))
+      (DynamoWrite.write[String].at("field1"),
+        DynamoWrite.write[String].at("field1")).contramapN[(String, String)](z => (z._1, z._2))
 
     writer.write(("value1", "value2")) should_== M(List("field1" -> S("value2")))
   }

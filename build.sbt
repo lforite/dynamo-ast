@@ -2,17 +2,17 @@ name := "dynamo-ast"
 
 organization := "com.github.louis-forite"
 
-version := "0.2"
+version := "0.3"
 
-scalaVersion := "2.12.0"
-crossScalaVersions := Seq("2.11.8", "2.12.0")
+scalaVersion := "2.12.8"
+crossScalaVersions := Seq("2.12.8")
 
 lazy val dynamoast =  project.in(file("."))
     .settings(publishSettings)
 
-libraryDependencies += "org.specs2" %% "specs2-core" % "3.8.6" % Test
-libraryDependencies += "org.specs2" %% "specs2-scalacheck" % "3.8.6" % Test
-libraryDependencies += "org.typelevel" %% "cats" % "0.8.1"
+libraryDependencies += "org.specs2" %% "specs2-core" % "4.5.1" % Test
+libraryDependencies += "org.specs2" %% "specs2-scalacheck" % "4.5.1" % Test
+libraryDependencies += "org.typelevel" %% "cats-core" % "1.4.0"
 
 scalacOptions ++= Seq(
   "-Xfatal-warnings",
@@ -33,16 +33,16 @@ scalacOptions ++= Seq(
 lazy val publishSettings = Seq(
   publishTo := Option("releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2"),
   publishMavenStyle := true,
-  homepage := Some(url("https://github.com/louis-forite/dynamo-ast")),
+  homepage := Some(url("https://github.com/lforite/dynamo-ast")),
   licenses := Seq("MIT" -> url("http://opensource.org/licenses/MIT")),
-  scmInfo := Some(ScmInfo(url("https://github.com/louis-forite/dynamo-ast"), "scm:git:git@github.com:louis-forite/dynamo-ast.git")),
+  scmInfo := Some(ScmInfo(url("https://github.com/lforite/dynamo-ast"), "scm:git:git@github.com:lforite/dynamo-ast.git")),
   autoAPIMappings := true,
   pomExtra := (
       <developers>
         <developer>
-          <id>louis-forite</id>
+          <id>lforitie</id>
           <name>Louis Forite</name>
-          <url>https://github.com/louis-forite/</url>
+          <url>https://github.com/lforite/</url>
         </developer>
       </developers>
       ),
