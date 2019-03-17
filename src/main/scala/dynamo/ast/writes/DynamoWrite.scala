@@ -11,7 +11,7 @@ object DynamoWrite extends PrimitiveWrite with CollectionWrite {
   def apply[A](implicit write: DynamoWrite[A]): DynamoWrite[A] = write
 
   implicit val contravariantWrites: Contravariant[DynamoWrite] = new Contravariant[DynamoWrite] {
-    override def contramap[A, B](fa: DynamoWrite[A])(f: B => A): DynamoWrite[B] = new DynamoWrite[B]{
+    override def contramap[A, B](fa: DynamoWrite[A])(f: B => A): DynamoWrite[B] = new DynamoWrite[B] {
       override def write(b: B): DynamoType = fa.write(f(b))
     }
   }
@@ -25,7 +25,7 @@ object DynamoWrite extends PrimitiveWrite with CollectionWrite {
 
   def writeOpt[A]: WriteOptAt[A] = new WriteOptAt[A]
   class WriteOptAt[A] {
-    def at(path: String)(implicit dynamoWrite: DynamoWrite[A]): DynamoMWrite[Option[A]] = new DynamoMWrite[Option[A]]{
+    def at(path: String)(implicit dynamoWrite: DynamoWrite[A]): DynamoMWrite[Option[A]] = new DynamoMWrite[Option[A]] {
       override def write(aOpt: Option[A]): M = aOpt.fold(M(Nil))(a => M(List(path -> dynamoWrite.write(a))))
     }
   }

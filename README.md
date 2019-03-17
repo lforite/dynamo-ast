@@ -7,7 +7,7 @@ Installation
 -----------------------
 
 ```scala
-libraryDependencies += "com.github.louis-forite" %% "dynamo-ast" % "0.2"
+libraryDependencies += "com.github.louis-forite" %% "dynamo-ast" % "0.3"
 resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/releases"
 ```
 

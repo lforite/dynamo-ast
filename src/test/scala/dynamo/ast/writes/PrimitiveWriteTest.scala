@@ -3,7 +3,8 @@ package dynamo.ast.writes
 import dynamo.ast._
 import org.specs2.{ScalaCheck, Specification}
 
-class PrimitiveWriteTest extends Specification with ScalaCheck { def is = s2"""
+class PrimitiveWriteTest extends Specification with ScalaCheck {
+  def is = s2"""
  Specification for the primitive writes
   Writing any String should yield a success containing an S containing the String $writeString
   Writing any Int should yield a success containing an N containing the Int as String $writeInt

@@ -5,7 +5,8 @@ import dynamo.ast.Arbitraries._
 import dynamo.ast.{DynamoType, M, S}
 import org.specs2._
 
-class DynamoReadTest extends Specification with ScalaCheck { def is = s2"""
+class DynamoReadTest extends Specification with ScalaCheck {
+  def is = s2"""
  Specification for DynamoRead
   pure returns a success $pure
 
@@ -40,10 +41,10 @@ class DynamoReadTest extends Specification with ScalaCheck { def is = s2"""
 
   def readNotM = {
     val dynamoType = S("any string")
-    DynamoRead.read("key").as[S].read(dynamoType) should beLike { case DynamoReadError("", err) => err must contain("was expecting M got")}
+    DynamoRead.read("key").as[S].read(dynamoType) should beLike { case DynamoReadError("", err) => err must contain("was expecting M got") }
   }
 
-  def readAsReadAt = prop { (any: DynamoType, other: DynamoType, path: String) =>
+  def readAsReadAt = prop { (other: DynamoType, path: String) =>
     import DynamoRead._
     DynamoRead.read(path).as[DynamoType].read(other) should_== DynamoRead.read[DynamoType].at(path).read(other)
   }
@@ -58,10 +59,8 @@ class DynamoReadTest extends Specification with ScalaCheck { def is = s2"""
     DynamoRead.readOpt("key").as[S].read(dynamoType) should_== DynamoReadSuccess(None)
   }
 
-  def readOptAsReadOptAt = prop { (any: DynamoType, other: DynamoType, path: String) =>
+  def readOptAsReadOptAt = prop { (other: DynamoType, path: String) =>
     import DynamoRead._
     DynamoRead.readOpt(path).as[DynamoType].read(other) should_== DynamoRead.readOpt[DynamoType].at(path).read(other)
   }
 }
-
-
