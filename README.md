@@ -1,13 +1,13 @@
 # Dynamo-ast
 [![Build Status](https://travis-ci.org/lforite/dynamo-ast.png?branch=master)](https://travis-ci.org/lforite/dynamo-ast)
 
-A tiny library to encode DynamoDB AST. Defines types classes to read/write from/to DynamoDb types. Deeply inspired by [play-json](https://github.com/playframework/play-json) design.
+A tiny library to encode DynamoDB AST. Defines type classes to read/write from/to DynamoDb types. Deeply inspired by [play-json](https://github.com/playframework/play-json) design.
 
 Installation
 -----------------------
 
 ```scala
-libraryDependencies += "com.github.louis-forite" %% "dynamo-ast" % "0.2"
+libraryDependencies += "com.github.louis-forite" %% "dynamo-ast" % "0.3"
 resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/releases"
 ```
 
@@ -26,14 +26,14 @@ case class Student(id: String, firstName: String, lastName: Option[String])
 
 object Student {
   implicit val studentRead: DynamoRead[Student] =
-    (read[String].at("id") |@|
-      read[String].at("firstName") |@|
-      readOpt[String].at("lastName")) map Student.apply
+    (read[String].at("id"),
+      read[String].at("firstName"),
+      readOpt[String].at("lastName")) mapN Student.apply
 
    implicit val studentWrite: DynamoWrite[Student] =
-    (write[String].at("id") |@|
-        write[String].at("firstName") |@|
-        writeOpt[String].at("lastName")) contramap(s => (s.id, s.firstName, s.lastName))
+    (write[String].at("id"),
+        write[String].at("firstName"),
+        writeOpt[String].at("lastName")) contramapN(s => (s.id, s.firstName, s.lastName))
 }
 
 val dynamoStudent = M(List(

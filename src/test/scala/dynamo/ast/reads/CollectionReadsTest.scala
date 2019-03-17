@@ -4,7 +4,8 @@ import dynamo.ast.Arbitraries._
 import dynamo.ast._
 import org.specs2.{ScalaCheck, Specification}
 
-class CollectionReadsTest extends Specification with ScalaCheck { def is = s2"""
+class CollectionReadsTest extends Specification with ScalaCheck {
+  def is = s2"""
  Specification for the collection reads
 
   Reading any L as List should yield a success containing the List $readList
@@ -21,13 +22,13 @@ class CollectionReadsTest extends Specification with ScalaCheck { def is = s2"""
     DynamoRead.ListRead[DynamoType].read(l) should_== DynamoReadSuccess(l.elements)
   }
 
-  def readListFail = prop { dynamoType: DynamoType =>
-    DynamoRead.ListRead[DynamoType].read(dynamoType) should beLike { case DynamoReadError(_, err) => err must contain("was expecting L got") }
-  }.setGen(Arbitraries.DynamoTypeArb.arbitrary.filter {
-    case l: L[_] => false
-    case _ => true
-  })
-
+  def readListFail =
+    prop { dynamoType: DynamoType =>
+      DynamoRead.ListRead[DynamoType].read(dynamoType) should beLike { case DynamoReadError(_, err) => err must contain("was expecting L got") }
+    }.setGen(Arbitraries.DynamoTypeArb.arbitrary.filter {
+      case _: L[_] => false
+      case _       => true
+    })
 
   def readSetSS = prop { ss: SS =>
     DynamoRead.SetRead[DynamoType].read(ss) should_== DynamoReadSuccess(ss.strings)
@@ -41,13 +42,14 @@ class CollectionReadsTest extends Specification with ScalaCheck { def is = s2"""
     DynamoRead.SetRead[DynamoType].read(l) should beLike { case DynamoReadSuccess(_) => ok }
   }
 
-  def readSetFail = prop { dynamoType: DynamoType =>
-    DynamoRead.SetRead[DynamoType].read(dynamoType) should beLike { case DynamoReadError(_, err) => ok }
-  }.setGen(Arbitraries.DynamoTypeArb.arbitrary.filter {
-    case l: L[_] => false
-    case ns: NS => false
-    case ss: SS => false
-    case _ => true
-  })
+  def readSetFail =
+    prop { dynamoType: DynamoType =>
+      DynamoRead.SetRead[DynamoType].read(dynamoType) should beLike { case DynamoReadError(_, _) => ok }
+    }.setGen(Arbitraries.DynamoTypeArb.arbitrary.filter {
+      case _: L[_] => false
+      case _: NS   => false
+      case _: SS   => false
+      case _       => true
+    })
 
 }

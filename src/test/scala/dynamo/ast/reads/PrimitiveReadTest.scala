@@ -4,7 +4,8 @@ import dynamo.ast._
 import org.specs2.{ScalaCheck, Specification}
 import dynamo.ast.Arbitraries._
 
-class PrimitiveReadTest extends Specification with ScalaCheck { def is = s2"""
+class PrimitiveReadTest extends Specification with ScalaCheck {
+  def is = s2"""
  Specification for the default reads
   Reading any S as a String should yield a success containing the string $readString
   Reading any DynamoType which is not a S as String should yield an error $readStringFail
@@ -41,13 +42,13 @@ class PrimitiveReadTest extends Specification with ScalaCheck { def is = s2"""
     DynamoRead.StringRead.read(s) should_== DynamoReadSuccess(s.value)
   }
 
-  def readStringFail = prop { dynamoType: DynamoType =>
-    DynamoRead.StringRead.read(dynamoType) should beLike { case DynamoReadError(_, err) => err must contain("was expecting S got") }
-  }.setGen(Arbitraries.DynamoTypeArb.arbitrary.filter {
-    case s: S => false
-    case _ => true
-  })
-
+  def readStringFail =
+    prop { dynamoType: DynamoType =>
+      DynamoRead.StringRead.read(dynamoType) should beLike { case DynamoReadError(_, err) => err must contain("was expecting S got") }
+    }.setGen(Arbitraries.DynamoTypeArb.arbitrary.filter {
+      case _: S => false
+      case _    => true
+    })
 
   def readInt = prop { i: Int =>
     DynamoRead.IntRead.read(N(i.toString)) should_== DynamoReadSuccess(i)
@@ -57,13 +58,13 @@ class PrimitiveReadTest extends Specification with ScalaCheck { def is = s2"""
     DynamoRead.IntRead.read(N(i.toString + "INVALID")) should beLike { case DynamoReadError(_, err) => err must contain("expected valid int got") }
   }
 
-  def readIntFail = prop { dynamoType: DynamoType =>
-    DynamoRead.IntRead.read(dynamoType) should beLike { case DynamoReadError(_, err) => err must contain("was expecting N got") }
-  }.setGen(Arbitraries.DynamoTypeArb.arbitrary.filter {
-    case n: N => false
-    case _ => true
-  })
-
+  def readIntFail =
+    prop { dynamoType: DynamoType =>
+      DynamoRead.IntRead.read(dynamoType) should beLike { case DynamoReadError(_, err) => err must contain("was expecting N got") }
+    }.setGen(Arbitraries.DynamoTypeArb.arbitrary.filter {
+      case _: N => false
+      case _    => true
+    })
 
   def readShort = prop { s: Short =>
     DynamoRead.ShortRead.read(N(s.toString)) should_== DynamoReadSuccess(s)
@@ -73,12 +74,13 @@ class PrimitiveReadTest extends Specification with ScalaCheck { def is = s2"""
     DynamoRead.ShortRead.read(N(s.toString + "INVALID")) should beLike { case DynamoReadError(_, err) => err must contain("expected valid short got") }
   }
 
-  def readShortFail = prop { dynamoType: DynamoType =>
-    DynamoRead.ShortRead.read(dynamoType) should beLike { case DynamoReadError(_, err) => err must contain("was expecting N got") }
-  }.setGen(Arbitraries.DynamoTypeArb.arbitrary.filter {
-    case n: N => false
-    case _ => true
-  })
+  def readShortFail =
+    prop { dynamoType: DynamoType =>
+      DynamoRead.ShortRead.read(dynamoType) should beLike { case DynamoReadError(_, err) => err must contain("was expecting N got") }
+    }.setGen(Arbitraries.DynamoTypeArb.arbitrary.filter {
+      case _: N => false
+      case _    => true
+    })
 
   //TODO later: Add suport for byte type
 //
@@ -97,7 +99,6 @@ class PrimitiveReadTest extends Specification with ScalaCheck { def is = s2"""
 //    case _ => true
 //  })
 
-
   def readLong = prop { l: Long =>
     DynamoRead.LongRead.read(N(l.toString)) should_== DynamoReadSuccess(l)
   }
@@ -106,13 +107,13 @@ class PrimitiveReadTest extends Specification with ScalaCheck { def is = s2"""
     DynamoRead.LongRead.read(N(l.toString + "INVALID")) should beLike { case DynamoReadError(_, err) => err must contain("expected valid long got") }
   }
 
-  def readLongFail = prop { dynamoType: DynamoType =>
-    DynamoRead.LongRead.read(dynamoType) should beLike { case DynamoReadError(_, err) => err must contain("was expecting N got") }
-  }.setGen(Arbitraries.DynamoTypeArb.arbitrary.filter {
-    case n: N => false
-    case _ => true
-  })
-
+  def readLongFail =
+    prop { dynamoType: DynamoType =>
+      DynamoRead.LongRead.read(dynamoType) should beLike { case DynamoReadError(_, err) => err must contain("was expecting N got") }
+    }.setGen(Arbitraries.DynamoTypeArb.arbitrary.filter {
+      case _: N => false
+      case _    => true
+    })
 
   def readFloat = prop { f: Float =>
     DynamoRead.FloatRead.read(N(f.toString)) should_== DynamoReadSuccess(f)
@@ -122,13 +123,13 @@ class PrimitiveReadTest extends Specification with ScalaCheck { def is = s2"""
     DynamoRead.FloatRead.read(N(f.toString + "INVALID")) should beLike { case DynamoReadError(_, err) => err must contain("expected valid float got") }
   }
 
-  def readFloatFail = prop { dynamoType: DynamoType =>
-    DynamoRead.FloatRead.read(dynamoType) should beLike { case DynamoReadError(_, err) => err must contain("was expecting N got") }
-  }.setGen(Arbitraries.DynamoTypeArb.arbitrary.filter {
-    case n: N => false
-    case _ => true
-  })
-
+  def readFloatFail =
+    prop { dynamoType: DynamoType =>
+      DynamoRead.FloatRead.read(dynamoType) should beLike { case DynamoReadError(_, err) => err must contain("was expecting N got") }
+    }.setGen(Arbitraries.DynamoTypeArb.arbitrary.filter {
+      case _: N => false
+      case _    => true
+    })
 
   def readDouble = prop { d: Double =>
     DynamoRead.DoubleRead.read(N(d.toString)) should_== DynamoReadSuccess(d)
@@ -138,23 +139,24 @@ class PrimitiveReadTest extends Specification with ScalaCheck { def is = s2"""
     DynamoRead.DoubleRead.read(N(d.toString + "INVALID")) should beLike { case DynamoReadError(_, err) => err must contain("expected valid double got") }
   }
 
-  def readDoubleFail = prop { dynamoType: DynamoType =>
-    DynamoRead.DoubleRead.read(dynamoType) should beLike { case DynamoReadError(_, err) => err must contain("was expecting N got") }
-  }.setGen(Arbitraries.DynamoTypeArb.arbitrary.filter {
-    case n: N => false
-    case _ => true
-  })
-
+  def readDoubleFail =
+    prop { dynamoType: DynamoType =>
+      DynamoRead.DoubleRead.read(dynamoType) should beLike { case DynamoReadError(_, err) => err must contain("was expecting N got") }
+    }.setGen(Arbitraries.DynamoTypeArb.arbitrary.filter {
+      case _: N => false
+      case _    => true
+    })
 
   def readBoolean = prop { b: Boolean =>
     DynamoRead.BooleanRead.read(BOOL(b)) should_== DynamoReadSuccess(b)
   }
 
-  def readBooleanFail = prop { dynamoType: DynamoType =>
-    DynamoRead.BooleanRead.read(dynamoType) should beLike { case DynamoReadError(_, err) => err must contain("was expecting BOOL got") }
-  }.setGen(Arbitraries.DynamoTypeArb.arbitrary.filter {
-    case b: BOOL => false
-    case _ => true
-  })
+  def readBooleanFail =
+    prop { dynamoType: DynamoType =>
+      DynamoRead.BooleanRead.read(dynamoType) should beLike { case DynamoReadError(_, err) => err must contain("was expecting BOOL got") }
+    }.setGen(Arbitraries.DynamoTypeArb.arbitrary.filter {
+      case _: BOOL => false
+      case _       => true
+    })
 
 }
